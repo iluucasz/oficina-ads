@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  master
+  admin
+  regular
+  marketing
+}
+
+enum ReportType {
+  marketing
+  products
+  financial
+}
+
+enum CampaignPlatform {
+  facebook
+  google_ads
+  instagram
+  other
+}
+
+enum CampaignStatus {
+  draft
+  active
+  paused
+  completed
+}
+
+enum FacebookAudienceType {
+  saved
+  custom
+  lookalike
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  GRACE
+  EXPIRED
+}
+
+enum SubscriptionPlan {
+  basic
+  premium
+  enterprise
+}
+
+model User {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  email            String           @unique
+  password         String
+  fullName         String
+  companyName      String? // Nome da empresa
+  cnpj             String? // CNPJ ou CPF
+  street           String? // Rua / Logradouro
+  neighborhood     String? // Bairro
+  city             String? // Cidade
+  state            String? // Estado (sigla)
+  cep              String? // CEP
+  phone            String? // Telefone comercial
+  role             Role             @default(regular)
+  subscriptionPlan SubscriptionPlan @default(basic)
+  termsAccepted    Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  lastLogin        DateTime?
+  avatarUrl        String?
+
+  productsCreated     Product[]             @relation("ProductCreatedBy")
+  priceCalculations   PriceCalculation[]
+  simulationScenarios SimulationScenario[]
+  reports             Report[]
+  marketingCampaigns  MarketingCampaign[]
+  facebookAudiences   FacebookAudience[]
+  googleAnalyticsData GoogleAnalyticsData[]
+  helpCenterEntries   HelpCenter[]
+  settings            Setting[]
+  subscriptions       Subscription[]
+  userActivityLogs    UserActivityLog[]
+}
+
+model Product {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  cost        Float
+  price       Float
+  margin      Float
+  stock       Int      @default(0)
+  sku         String?
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  createdById String?  @db.ObjectId
+  createdBy   User?    @relation("ProductCreatedBy", fields: [createdById], references: [id])
+
+  priceCalculations   PriceCalculation[]
+  simulationScenarios SimulationScenario[]
+  productCampaigns    ProductCampaign[]
+}
+
+model PriceCalculation {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String
+  productCost          Float
+  desiredMargin        Float
+  shippingCost         Float
+  packagingCost        Float
+  paymentFeePercentage Float
+  marketingCost        Float
+  otherCosts           Float    @default(0)
+  calculatedPrice      Float
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+  userId               String   @db.ObjectId
+  user                 User     @relation(fields: [userId], references: [id])
+  productId            String?  @db.ObjectId
+  product              Product? @relation(fields: [productId], references: [id])
+}
+
+model SimulationScenario {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  description         String?
+  initialPrice        Float
+  targetPrice         Float
+  expectedSalesVolume Int
+  marketSize          Int?
+  competitorPrice     Float?
+  marketingBudget     Float?
+  fixedCosts          Float?
+  variableCosts       Float?
+  profitMargin        Float?
+  breakEvenPoint      Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now())
+  userId              String   @db.ObjectId
+  user                User     @relation(fields: [userId], references: [id])
+  productId           String?  @db.ObjectId
+  product             Product? @relation(fields: [productId], references: [id])
+}
+
+model Report {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String?
+  reportType     ReportType
+  dateRangeStart DateTime?
+  dateRangeEnd   DateTime?
+  data           Json
+  createdAt      DateTime   @default(now())
+  userId         String     @db.ObjectId
+  user           User       @relation(fields: [userId], references: [id])
+}
+
+model MarketingCampaign {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  description        String?
+  platform           CampaignPlatform
+  status             CampaignStatus
+  budget             Float
+  startDate          DateTime
+  endDate            DateTime?
+  targetAudience     Json?
+  performanceMetrics Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now())
+  userId             String           @db.ObjectId
+  user               User             @relation(fields: [userId], references: [id])
+
+  facebookCampaigns  FacebookCampaign[]
+  googleAdsCampaigns GoogleAdsCampaign[]
+  productCampaigns   ProductCampaign[]
+}
+
+model FacebookCampaign {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId          String            @unique
+  name                String
+  status              String
+  objective           String
+  spend               Float             @default(0)
+  impressions         Int               @default(0)
+  clicks              Int               @default(0)
+  conversions         Int               @default(0)
+  ctr                 Float             @default(0)
+  cpc                 Float             @default(0)
+  cpm                 Float             @default(0)
+  lastSyncedAt        DateTime          @default(now())
+  marketingCampaignId String            @db.ObjectId
+  marketingCampaign   MarketingCampaign @relation(fields: [marketingCampaignId], references: [id])
+}
+
+model FacebookAudience {
+  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+  audienceId   String               @unique
+  name         String
+  audienceType FacebookAudienceType
+  size         Int?
+  description  String?
+  createdAt    DateTime             @default(now())
+  userId       String               @db.ObjectId
+  user         User                 @relation(fields: [userId], references: [id])
+}
+
+model GoogleAdsCampaign {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId          String            @unique
+  name                String
+  status              String
+  campaignType        String
+  spend               Float             @default(0)
+  impressions         Int               @default(0)
+  clicks              Int               @default(0)
+  conversions         Int               @default(0)
+  ctr                 Float             @default(0)
+  cpc                 Float             @default(0)
+  qualityScore        Float?
+  lastSyncedAt        DateTime          @default(now())
+  marketingCampaignId String            @db.ObjectId
+  marketingCampaign   MarketingCampaign @relation(fields: [marketingCampaignId], references: [id])
+
+  keywords GoogleAdsKeyword[]
+}
+
+model GoogleAdsKeyword {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  keywordId       String            @unique
+  keywordText     String
+  matchType       String
+  status          String
+  clicks          Int               @default(0)
+  impressions     Int               @default(0)
+  ctr             Float             @default(0)
+  averagePosition Float?
+  qualityScore    Int?
+  campaignId      String            @db.ObjectId
+  campaign        GoogleAdsCampaign @relation(fields: [campaignId], references: [id])
+}
+
+model GoogleAnalyticsData {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  date               DateTime
+  users              Int      @default(0)
+  newUsers           Int      @default(0)
+  sessions           Int      @default(0)
+  bounceRate         Float    @default(0)
+  avgSessionDuration Int      @default(0)
+  pageViews          Int      @default(0)
+  transactions       Int      @default(0)
+  revenue            Float    @default(0)
+  conversionRate     Float    @default(0)
+  source             String?
+  medium             String?
+  campaign           String?
+  createdAt          DateTime @default(now())
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model HelpCenter {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  category    String
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  createdById String?  @db.ObjectId
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+}
+
+model Setting {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @db.ObjectId
+  user                 User     @relation(fields: [userId], references: [id])
+  shippingCost         Float    @default(0)
+  marketingBudget      Float    @default(0)
+  packagingCost        Float    @default(0)
+  paymentFeePercentage Float    @default(0)
+  expectedMonthlySales Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+}
+
+model ProductCampaign {
+  id                  String @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String @db.ObjectId
+  marketingCampaignId String @db.ObjectId
+
+  product           Product           @relation(fields: [productId], references: [id])
+  marketingCampaign MarketingCampaign @relation(fields: [marketingCampaignId], references: [id])
+
+  @@unique([productId, marketingCampaignId], name: "product_campaign_unique")
+}
+
+model UserActivityLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?  @db.ObjectId
+  details    Json?
+  createdAt  DateTime @default(now())
+}
+
+model Plan {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  durationDays  Int
+  graceDays     Int
+  priceCents    Int
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String             @db.ObjectId
+  user         User               @relation(fields: [userId], references: [id])
+  planId       String             @db.ObjectId
+  plan         Plan               @relation(fields: [planId], references: [id])
+  startDate    DateTime           @default(now())
+  endDate      DateTime
+  graceEndDate DateTime
+  status       SubscriptionStatus @default(ACTIVE)
+  createdAt    DateTime           @default(now())
+}
