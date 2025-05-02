@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { Header } from "@/components/header";
 
 export default function AppLayout({
   children,
@@ -43,7 +44,8 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen flex-col">
       {/* Aqui você pode adicionar componentes como header, sidebar, etc. */}
-      <div className="flex flex-1">
+      <Header />
+      <div className="flex flex-col">
         {/* Conteúdo principal */}
         <div className="flex-1">{children}</div>
       </div>

@@ -8,6 +8,7 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
+      avatarUrl?: string | null;
       role: string;
       subscriptionPlan: string;
       // Campos adicionais do usuário

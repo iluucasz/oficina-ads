@@ -72,6 +72,7 @@ export const authOptions = {
         token.role = user.role;
         token.subscriptionPlan = user.subscriptionPlan;
         token.subscription = user.subscriptions?.[0] || null;
+        token.avatarUrl = user.avatarUrl || user.image || null;
         
         // Adicionar campos adicionais do usuário
         token.cnpj = user.cnpj;
@@ -94,6 +95,7 @@ export const authOptions = {
         session.user.role = token.role as string;
         session.user.subscriptionPlan = token.subscriptionPlan as string;
         session.user.subscription = token.subscription;
+        session.user.avatarUrl = token.avatarUrl as string | null;
         
         // Adicionar campos adicionais do usuário à sessão
         session.user.cnpj = token.cnpj;

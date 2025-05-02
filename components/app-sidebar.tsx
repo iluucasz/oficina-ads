@@ -50,9 +50,9 @@ export function AppSidebar() {
     <div className="fixed inset-y-0 z-20 flex flex-col bg-background border-r border-border w-64">
       <div className="border-b border-border">
         <div className="flex h-16 items-center gap-2 px-4">
-          <Link href="/app/dashboard" className="flex items-center font-semibold">
+          {/* <Link href="/app/dashboard" className="flex items-center font-semibold">
             <span className="text-lg">Precificador</span>
-          </Link>
+          </Link> */}
         </div>
       </div>
       <div className="flex-1 overflow-auto py-4">

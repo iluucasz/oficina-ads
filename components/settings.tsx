@@ -57,8 +57,7 @@ export function Settings() {
     <div className="space-y-6">
       <Tabs defaultValue="costs" className="w-full">
         <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="costs">Custos</TabsTrigger>
-          <TabsTrigger value="account">Conta</TabsTrigger>
+          <TabsTrigger value="costs">Configurações</TabsTrigger>
           <TabsTrigger value="privacy">Privacidade</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
@@ -66,7 +65,7 @@ export function Settings() {
         <TabsContent value="costs" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Configurações de Custos</CardTitle>
+              <CardTitle>Configurações Globais</CardTitle>
               <CardDescription>Configure os parâmetros de custo para cálculos de precificação</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -138,28 +137,6 @@ export function Settings() {
                 Resetar
               </Button>
               <Button onClick={handleSaveSettings}>Salvar Configurações</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="account" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações da Conta</CardTitle>
-              <CardDescription>Gerencie suas informações de conta</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" defaultValue="Usuário" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="usuario@exemplo.com" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Salvar Alterações</Button>
             </CardFooter>
           </Card>
         </TabsContent>
