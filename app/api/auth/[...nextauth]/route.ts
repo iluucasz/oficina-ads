@@ -50,6 +50,14 @@ export const authOptions = {
           
           // Remover a senha do objeto de usuário antes de retorná-lo
           const { password: _, ...userWithoutPassword } = user;
+          
+          // Log para debug
+          console.log("User data at auth:", { 
+            id: user.id, 
+            email: user.email, 
+            avatarUrl: user.avatarUrl 
+          });
+          
           return userWithoutPassword;
         } catch (error) {
           console.error("Erro na autenticação:", error);
@@ -72,8 +80,8 @@ export const authOptions = {
         token.role = user.role;
         token.subscriptionPlan = user.subscriptionPlan;
         token.subscription = user.subscriptions?.[0] || null;
-        token.avatarUrl = user.avatarUrl || user.image || null;
-        
+        token.avatarUrl = user.avatarUrl;
+
         // Adicionar campos adicionais do usuário
         token.cnpj = user.cnpj;
         token.companyName = user.companyName;
@@ -95,7 +103,7 @@ export const authOptions = {
         session.user.role = token.role as string;
         session.user.subscriptionPlan = token.subscriptionPlan as string;
         session.user.subscription = token.subscription;
-        session.user.avatarUrl = token.avatarUrl as string | null;
+        session.user.avatarUrl = token.avatarUrl;
         
         // Adicionar campos adicionais do usuário à sessão
         session.user.cnpj = token.cnpj;

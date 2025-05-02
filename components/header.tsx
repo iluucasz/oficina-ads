@@ -1,11 +1,8 @@
 "use client";
-import { Bell, Search, LogOut, Settings, UserCircle } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { useSession, signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ModeToggle } from "@/components/mode-toggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Bell, LogOut, Search, Settings, UserCircle } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // Define o tipo extendido para o usuário da sessão
 interface ExtendedUser {
@@ -29,9 +30,165 @@ interface ExtendedUser {
 }
 
 export function Header() {
-  const { data: session } = useSession();
-  const user = session?.user as ExtendedUser;
+  const { data: session, status } = useSession();
+  const user = session?.user as ExtendedUser | undefined;
   const router = useRouter();
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Função para buscar o perfil do usuário da API
+  const fetchUserProfile = async () => {
+    if (!session?.user) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch('/api/user/profile');
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.user && data.user.avatarUrl) {
+          // Adicionar timestamp para evitar cache da imagem
+          const timestamp = new Date().getTime();
+          const avatarUrlWithTimestamp = `${data.user.avatarUrl}?t=${timestamp}`;
+          setAvatarSrc(avatarUrlWithTimestamp);
+        } else if (user?.image) {
+          console.log("No avatarUrl from API, using image:", user.image);
+          setAvatarSrc(user.image);
+        } else {
+          // Limpar explicitamente se não há avatar
+          console.log("No avatar found, clearing avatarSrc");
+          setAvatarSrc(null);
+        }
+      } else {
+        console.error("Error fetching user profile:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tenta usar avatarUrl da sessão primeiro, depois busca da API
+  useEffect(() => {
+    
+    if (user?.avatarUrl) {
+      // Adicionar timestamp para evitar cache da imagem
+      const timestamp = new Date().getTime();
+      const avatarUrlWithTimestamp = `${user.avatarUrl}?t=${timestamp}`;
+      setAvatarSrc(avatarUrlWithTimestamp);
+    } else if (user?.image) {
+      setAvatarSrc(user.image);
+    } else {
+      setAvatarSrc(null); // Limpar explicitamente quando não há avatar
+      fetchUserProfile();
+    }
+  }, [user?.avatarUrl, user?.image, status, session]);
+
+  // Recarregar o avatar quando a URL mudar ou quando o localStorage for atualizado
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (!window.location.hash.includes("settings")) {
+        fetchUserProfile();
+      }
+    };
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      console.log("Storage event detected:", e.key);
+      if (e.key === 'avatarUpdated') {
+        fetchUserProfile();
+      }
+      
+      if (e.key === 'forceRefresh') {
+        window.location.reload();
+      }
+
+      if (e.key === 'sessionRecreated') {
+        fetchUserProfile();
+      }
+    };
+    
+    // Verificar diretamente o localStorage
+    const checkLocalStorage = () => {
+      const lastUpdate = localStorage.getItem('avatarUpdated');
+      if (lastUpdate) {
+        fetchUserProfile();
+        // Limpar para não repetir
+        localStorage.removeItem('avatarUpdated');
+      }
+      
+      const forceRefresh = localStorage.getItem('forceRefresh');
+      if (forceRefresh) {
+        localStorage.removeItem('forceRefresh');
+        // Forçar nova busca do avatar
+        setTimeout(() => {
+          fetchUserProfile();
+          // Também podemos tentar atualizar a sessão
+          if (session) {
+            const event = new CustomEvent('session-update', { detail: { updated: true } });
+            document.dispatchEvent(event);
+          }
+        }, 500);
+      }
+
+      const sessionRecreated = localStorage.getItem('sessionRecreated');
+      if (sessionRecreated) {
+        localStorage.removeItem('sessionRecreated');
+        
+        // Se a sessão foi recriada, forçar a limpeza do avatarSrc e buscar dados novamente
+        setAvatarSrc(null);
+        
+        // Esperar um pouco e recarregar os dados do usuário
+        setTimeout(() => {
+          fetchUserProfile();
+        }, 1000);
+      }
+    };
+    
+    // Verificar ao montar o componente
+    checkLocalStorage();
+    
+    // Configurar ouvintes
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Configurar verificação periódica
+    const interval = setInterval(checkLocalStorage, 1000);
+    
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Adicionar um listener para o evento personalizado avatar-updated
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const handleAvatarUpdated = (e: CustomEvent) => {
+      
+      const { avatarUrl, timestamp } = e.detail;
+      
+      if (avatarUrl) {
+        // Adicionar timestamp para evitar cache
+        const avatarUrlWithTimestamp = `${avatarUrl}?t=${timestamp}`;
+        setAvatarSrc(avatarUrlWithTimestamp);
+      } else {
+        // Limpar o avatar se foi removido
+        setAvatarSrc(null);
+      }
+    };
+    
+    // Adicionar o listener para o evento personalizado
+    document.addEventListener('avatar-updated', handleAvatarUpdated as EventListener);
+    
+    // Remover o listener quando o componente for desmontado
+    return () => {
+      document.removeEventListener('avatar-updated', handleAvatarUpdated as EventListener);
+    };
+  }, []);
 
   // Função para obter as iniciais do nome do usuário
   const getUserInitials = () => {
@@ -42,13 +199,6 @@ export function Header() {
       .join("")
       .toUpperCase()
       .substring(0, 2);
-  };
-
-  // Obter a URL do avatar do usuário
-  const getUserAvatar = () => {
-    if (user?.avatarUrl) return user.avatarUrl;
-    if (user?.image) return user.image;
-    return "";
   };
 
   // Função para abrir o modal de configurações
@@ -85,6 +235,7 @@ export function Header() {
           <Button variant="ghost" size="icon" aria-label="Notificações">
             <Bell className="h-5 w-5" />
           </Button>
+
           <ModeToggle />
 
           <DropdownMenu>
@@ -96,32 +247,31 @@ export function Header() {
                 className="rounded-full"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={getUserAvatar()}
-                    alt={user?.name || "Avatar"}
-                  />
+                  {avatarSrc ? (
+                    <AvatarImage
+                      src={avatarSrc}
+                      alt={user?.name || "Avatar"}
+                    />
+                  ) : null}
                   <AvatarFallback>{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <div>
-              Conta: {" "}
-              {user?.role && (
-                <Badge variant="outline" className="self-center cursor-pointer">
-                  {user.role === "admin" && "Admin"}
-                  {user.role === "regular" && "Comum"}
-                  {user.role === "marketing" && "Marketing"}
-                  {user.role === "master" && "Master"}
-                </Badge>
-              )}
-            </div>
-
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex flex-col space-y-2 p-2">
                 <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {user?.email || "email@exemplo.com"}
                 </p>
+
+                {user?.role && (
+                  <Badge variant="outline" className="self-center cursor-pointer">
+                    {user.role === "admin" && "Admin"}
+                    {user.role === "regular" && "Comum"}
+                    {user.role === "marketing" && "Marketing"}
+                    {user.role === "master" && "Master"}
+                  </Badge>
+                )}
 
                 {user?.subscriptionPlan && (
                   <Badge className="self-center cursor-pointer">
