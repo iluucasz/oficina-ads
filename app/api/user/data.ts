@@ -5,7 +5,7 @@ export interface User {
   companyName?: string;
   cnpj?: string;
   street?: string;
-  neighborhood?: string;
+  streetNumber?: string;
   city?: string;
   state?: string;
   cep?: string;

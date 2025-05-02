@@ -95,6 +95,7 @@ export async function updateUserAvatar(formData: FormData) {
  */
 export async function removeUserAvatar(userId: string) {
   try {
+    console.log(`[removeUserAvatar] Iniciando remoção de avatar para usuário: ${userId}`);
     
     if (!userId) {
       return { success: false, message: 'ID de usuário inválido' };
@@ -106,6 +107,7 @@ export async function removeUserAvatar(userId: string) {
       select: { avatarUrl: true }
     });
     
+    console.log(`[removeUserAvatar] Avatar encontrado: ${user?.avatarUrl}`);
     
     // Se não encontrou o usuário ou não tem avatarUrl, retornar erro amigável
     if (!user || !user.avatarUrl) {
@@ -130,20 +132,28 @@ export async function removeUserAvatar(userId: string) {
     
     // Tentar remover do Cloudinary
     try {
+      console.log(`[removeUserAvatar] Tentando remover imagem do Cloudinary: ${user.avatarUrl}`);
+      
       // Obter o public_id a partir da URL
       const publicId = extractPublicIdFromUrl(user.avatarUrl);
+      console.log(`[removeUserAvatar] Public ID extraído: ${publicId}`);
       
       if (publicId) {
         // Remover do Cloudinary
+        console.log(`[removeUserAvatar] Removendo imagem com public_id: ${publicId}`);
         const result = await cloudinary.uploader.destroy(publicId);
-        cloudinarySuccess = true;
-      } else {
-        
+        console.log(`[removeUserAvatar] Resposta do Cloudinary:`, result);
+        cloudinarySuccess = result.result === 'ok';
+      } 
+      
+      // Mesmo se obter public_id da URL falhar, tentar com o formato padrão
+      if (!publicId || !cloudinarySuccess) {
         // Tentar com o formato padrão
         const defaultPublicId = `avatars/user-${userId}`;
+        console.log(`[removeUserAvatar] Tentando remover com ID padrão: ${defaultPublicId}`);
         const result = await cloudinary.uploader.destroy(defaultPublicId);
         console.log(`[removeUserAvatar] Resposta do Cloudinary (formato padrão):`, result);
-        cloudinarySuccess = true;
+        cloudinarySuccess = result.result === 'ok';
       }
     } catch (cloudinaryError) {
       // Mesmo com erro no Cloudinary, continuaremos para atualizar o banco
@@ -153,12 +163,13 @@ export async function removeUserAvatar(userId: string) {
     
     // Atualizar o banco de dados para remover a referência ao avatar
     try {
-      
+      console.log(`[removeUserAvatar] Atualizando banco de dados para remover referência ao avatar`);
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: { avatarUrl: null }
       });
       
+      console.log(`[removeUserAvatar] Banco de dados atualizado com sucesso`);
       
       return { 
         success: true, 
@@ -181,30 +192,55 @@ export async function removeUserAvatar(userId: string) {
  */
 function extractPublicIdFromUrl(url: string): string | null {
   try {
+    console.log(`[extractPublicIdFromUrl] Extraindo public_id de: ${url}`);
 
-    // Regex melhorada para suportar diferentes formatos de URL do Cloudinary
-    // Pode capturar URLs com ou sem número de versão (v1, v1746192193, etc)
-    // E também com diferentes extensões de arquivo (.jpg, .png, .webp, etc)
-    const regex = /\/(?:v\d+\/|upload\/)((?:[\w-]+\/)*[\w-]+)(?:\.\w+)?$/;
-    const match = url.match(regex);
+    // Verificar se a string está vazia ou é null/undefined
+    if (!url) {
+      console.log('[extractPublicIdFromUrl] URL está vazia ou null');
+      return null;
+    }
+
+    // Primeiro tenta com o padrão v1/upload/public_id
+    const uploadRegex = /\/(?:v\d+\/)?upload\/([^/]+\/[^/.]+)(?:\.[^/.]+)?$/;
+    const match1 = url.match(uploadRegex);
     
-    
-    if (match && match[1]) {
-      return match[1]; // Retorna o public_id, por exemplo "avatars/user-123456"
+    if (match1 && match1[1]) {
+      console.log(`[extractPublicIdFromUrl] Match 1: ${match1[1]}`);
+      return match1[1];
     }
     
-    // Fallback alternativo: extrair o caminho após a última barra
+    // Tenta extrair o formato avatars/user-ID
+    const userAvatarRegex = /(avatars\/user-[^/.]+)(?:\.[^/.]+)?$/;
+    const match2 = url.match(userAvatarRegex);
+    
+    if (match2 && match2[1]) {
+      console.log(`[extractPublicIdFromUrl] Match 2: ${match2[1]}`);
+      return match2[1];
+    }
+    
+    // Tenta o formato mais simples para extrair apenas o caminho
+    const simpleRegex = /\/([^/]+\/[^/.]+)(?:\.[^/.]+)?$/;
+    const match3 = url.match(simpleRegex);
+    
+    if (match3 && match3[1]) {
+      console.log(`[extractPublicIdFromUrl] Match 3: ${match3[1]}`);
+      return match3[1];
+    }
+    
+    // Ultimo recurso: extrair o nome do arquivo sem extensão
     const parts = url.split('/');
     const lastPart = parts[parts.length - 1];
     const fileNameWithoutExt = lastPart.split('.')[0];
     
     if (fileNameWithoutExt) {
+      console.log(`[extractPublicIdFromUrl] Último recurso: ${fileNameWithoutExt}`);
       return fileNameWithoutExt;
     }
     
+    console.log('[extractPublicIdFromUrl] Não foi possível extrair o public_id');
     return null;
   } catch (error) {
-    console.error('Erro ao extrair public_id:', error);
+    console.error('[extractPublicIdFromUrl] Erro ao extrair public_id:', error);
     return null;
   }
 } 

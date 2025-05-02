@@ -23,9 +23,9 @@ const registerSchema = z.object({
     .refine(val => !val || val.length >= 5, {
       message: "A rua deve ter pelo menos 5 caracteres."
     }),
-  bairro: z.string().optional()
-    .refine(val => !val || val.length >= 3, {
-      message: "O bairro deve ter pelo menos 3 caracteres."
+  numeroRua: z.string().optional()
+    .refine(val => !val || val.length >= 1, {
+      message: "O número da rua é obrigatório se preencher o endereço."
     }),
   cidade: z.string().optional()
     .refine(val => !val || val.length >= 3, {
@@ -49,16 +49,16 @@ const registerSchema = z.object({
   message: "As senhas não coincidem",
   path: ["passwordConfirm"],
 }).refine((data) => {
-  // Se rua foi preenchida, bairro, cidade e estado são obrigatórios
+  // Se rua foi preenchida, número, cidade e estado são obrigatórios
   if (data.rua && data.rua.length > 0) {
-    if (!data.bairro || data.bairro.length < 3) return false;
+    if (!data.numeroRua || data.numeroRua.length < 1) return false;
     if (!data.cidade || data.cidade.length < 3) return false;
     if (!data.estado || data.estado.length < 2) return false;
   }
   return true;
 }, {
-  message: "Se preencher o endereço, bairro, cidade e estado são obrigatórios",
-  path: ["bairro"]
+  message: "Se preencher o endereço, número, cidade e estado são obrigatórios",
+  path: ["numeroRua"]
 });
 
 export async function POST(request: Request) {
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
           companyName: data.empresa,
           cnpj: data.cnpj,
           street: data.rua,
-          neighborhood: data.bairro,
+          streetNumber: data.numeroRua,
           city: data.cidade,
           state: data.estado,
           cep: data.cep,

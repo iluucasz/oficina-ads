@@ -60,7 +60,7 @@ model User {
   companyName      String? // Nome da empresa
   cnpj             String? // CNPJ ou CPF
   street           String? // Rua / Logradouro
-  neighborhood     String? // Bairro
+  streetNumber     String? // Número da rua
   city             String? // Cidade
   state            String? // Estado (sigla)
   cep              String? // CEP

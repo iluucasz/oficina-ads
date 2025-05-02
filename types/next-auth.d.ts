@@ -7,7 +7,6 @@ declare module "next-auth" {
       id: string;
       name?: string | null;
       email?: string | null;
-      image?: string | null;
       avatarUrl?: string | null;
       role: string;
       subscriptionPlan: string;
@@ -15,7 +14,7 @@ declare module "next-auth" {
       cnpj?: string | null;
       companyName?: string | null;
       street?: string | null;
-      neighborhood?: string | null;
+      streetNumber?: string | null;
       city?: string | null;
       state?: string | null;
       cep?: string | null;

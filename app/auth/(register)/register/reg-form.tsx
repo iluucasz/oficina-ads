@@ -43,9 +43,9 @@ const schema = z.object({
     .refine(val => !val || val.length >= 5, {
       message: "A rua deve ter pelo menos 5 caracteres."
     }),
-  bairro: z.string().optional()
-    .refine(val => !val || val.length >= 3, {
-      message: "O bairro deve ter pelo menos 3 caracteres."
+  numeroRua: z.string().optional()
+    .refine(val => !val || val.length >= 1, {
+      message: "O número é obrigatório se preencher o endereço."
     }),
   cidade: z.string().optional()
     .refine(val => !val || val.length >= 3, {
@@ -69,16 +69,16 @@ const schema = z.object({
   message: "As senhas não coincidem",
   path: ["passwordConfirm"],
 }).refine((data) => {
-  // Se rua foi preenchida, bairro, cidade e estado são obrigatórios
+  // Se rua foi preenchida, número, cidade e estado são obrigatórios
   if (data.rua && data.rua.length > 0) {
-    if (!data.bairro || data.bairro.length < 3) return false;
+    if (!data.numeroRua || data.numeroRua.length < 1) return false;
     if (!data.cidade || data.cidade.length < 3) return false;
     if (!data.estado || data.estado.length < 2) return false;
   }
   return true;
 }, {
-  message: "Se preencher o endereço, bairro, cidade e estado são obrigatórios",
-  path: ["bairro"]
+  message: "Se preencher o endereço, número, cidade e estado são obrigatórios",
+  path: ["numeroRua"]
 });
 
 // Defina o tipo para o formulário baseado no schema
@@ -381,24 +381,24 @@ const RegForm = () => {
                 )}
               </div>
 
-              {/* Bairro */}
+              {/* Bairro substituído por Número */}
               <div>
-                <Label htmlFor="bairro" className="text-default-600 mb-3">
-                  Bairro <span className="text-muted-foreground text-sm">(Obrigatório se preencher endereço)</span>
+                <Label htmlFor="numeroRua" className="text-default-600 mb-3">
+                  Número <span className="text-muted-foreground text-sm">(Obrigatório se preencher endereço)</span>
                 </Label>
                 <Input
                   disabled={isPending}
-                  id="bairro"
+                  id="numeroRua"
                   type="text"
-                  placeholder="Nome do Bairro"
-                  {...register("bairro")}
+                  placeholder="Número da rua"
+                  {...register("numeroRua")}
                   className={cn(" ", {
-                    "border-destructive": errors.bairro,
+                    "border-destructive": errors.numeroRua,
                   })}
                 />
-                {errors.bairro && (
+                {errors.numeroRua && (
                   <div className="text-destructive mt-2">
-                    {errors.bairro.message as string}
+                    {errors.numeroRua.message as string}
                   </div>
                 )}
               </div>

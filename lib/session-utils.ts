@@ -7,8 +7,6 @@ import { useSession } from "next-auth/react";
  */
 export async function forceSessionUpdate(avatarUrl: string | null): Promise<void> {
   try {
-    console.log(`[forceSessionUpdate] Tentando atualizar a sessão com avatarUrl: ${avatarUrl}`);
-    
     // Obtenha a sessão atual
     const session = await fetch('/api/auth/session');
     
@@ -18,7 +16,6 @@ export async function forceSessionUpdate(avatarUrl: string | null): Promise<void
     }
     
     const sessionData = await session.json();
-    console.log('[forceSessionUpdate] Sessão atual:', sessionData);
     
     if (!sessionData || !sessionData.user) {
       console.error('[forceSessionUpdate] Sessão não encontrada ou usuário não autenticado');
@@ -34,9 +31,7 @@ export async function forceSessionUpdate(avatarUrl: string | null): Promise<void
       }
     };
     
-    console.log('[forceSessionUpdate] Sessão atualizada para enviar:', updatedSession);
-    
-    // Força a atualização do cookie de sessão
+    // Tenta atualizar o cookie de sessão
     const result = await fetch('/api/auth/update-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -49,42 +44,8 @@ export async function forceSessionUpdate(avatarUrl: string | null): Promise<void
       throw new Error(`Erro ao atualizar sessão: ${responseText}`);
     }
     
-    const responseData = await result.json();
-    console.log('[forceSessionUpdate] Resposta da API:', responseData);
-    
-    // Abordagem segura para atualizar a interface sem recarregar a página inteira
-    // Adicionar um timestamp para forçar que todos os componentes reconheçam a mudança
-    const timestamp = new Date().getTime();
-    localStorage.setItem('avatarUpdated', timestamp.toString());
-    
-    // Também armazenar a URL atual para que outros componentes possam acessá-la
-    if (avatarUrl) {
-      localStorage.setItem('currentAvatarUrl', avatarUrl);
-    } else {
-      localStorage.removeItem('currentAvatarUrl');
-    }
-    
-    // Tentar atualizar diretamente sem recarregar a página
-    try {
-      const event = new StorageEvent('storage', {
-        key: 'avatarUpdated',
-        newValue: timestamp.toString()
-      });
-      window.dispatchEvent(event);
-      
-      // Também disparar um evento personalizado para componentes que não escutam storage
-      const customEvent = new CustomEvent('avatar-updated', { 
-        detail: { avatarUrl, timestamp } 
-      });
-      document.dispatchEvent(customEvent);
-      
-      console.log('[forceSessionUpdate] Eventos de atualização disparados');
-    } catch (e) {
-      console.error('[forceSessionUpdate] Erro ao disparar eventos:', e);
-    }
-    
-    // Não recarregar a página para manter a experiência do usuário sem interrupções
-    console.log('[forceSessionUpdate] Processo concluído sem recarregar página');
+    // Força uma atualização completa
+    await fetch('/api/auth/refresh-session');
   } catch (error) {
     console.error('[forceSessionUpdate] Erro ao forçar atualização da sessão:', error);
   }
@@ -109,9 +70,6 @@ export async function forceNewSession(): Promise<void> {
     
     const result = await response.json();
     console.log('[forceNewSession] Resposta da API:', result);
-    
-    // Definir bandeira para forçar atualização dos componentes
-    localStorage.setItem('sessionRecreated', new Date().toISOString());
     
     // Espera um pouco antes de redirecionar
     setTimeout(() => {
