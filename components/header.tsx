@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 
 // Define o tipo extendido para o usuário da sessão
 interface ExtendedUser {
@@ -30,6 +31,7 @@ interface ExtendedUser {
 export function Header() {
   const { data: session } = useSession();
   const user = session?.user as ExtendedUser;
+  const router = useRouter();
 
   // Função para obter as iniciais do nome do usuário
   const getUserInitials = () => {
@@ -47,6 +49,11 @@ export function Header() {
     if (user?.avatarUrl) return user.avatarUrl;
     if (user?.image) return user.image;
     return "";
+  };
+
+  // Função para abrir o modal de configurações
+  const openSettingsModal = (tab: string) => {
+    window.location.hash = `settings/${tab}`;
   };
 
   return (
@@ -130,23 +137,27 @@ export function Header() {
                 )}
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/app/profile"
+              <DropdownMenuItem>
+                <button
                   className="cursor-pointer flex w-full items-center"
+                  onClick={() => {
+                    window.location.hash = "settings/profile";
+                  }}
                 >
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>Perfil</span>
-                </Link>
+                </button>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/app/settings"
+              <DropdownMenuItem>
+                <button
                   className="cursor-pointer flex w-full items-center"
+                  onClick={() => {
+                    window.location.hash = "settings";
+                  }}
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Configurações</span>
-                </Link>
+                </button>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

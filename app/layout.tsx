@@ -1,10 +1,10 @@
-import "./globals.css";
+import { SettingsModal } from "@/components/settings-modal";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/providers/auth-provider";
 import { Inter } from "next/font/google";
 import type React from "react";
-import { AuthProvider } from "@/providers/auth-provider";
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Header } from "@/components/header";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,6 +42,7 @@ export default function RootLayout({
           <AuthProvider>
             <main>{children}</main>
             <Toaster />
+            <SettingsModal />
           </AuthProvider>
         </ThemeProvider>
       </body>
